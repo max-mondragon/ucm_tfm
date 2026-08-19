@@ -4,9 +4,12 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 # Definir directorios
-csv_file = 'datasets/Kaggle - 100 Million+ Steam Reviews/all_reviews.csv'  
-parquet_file = 'reviews.parquet'
-chunk_size = 100_000  
+csv_file = 'datasets/Kaggle - 100 Million+ Steam Reviews/all_reviews.csv'
+parquet_file = 'datasets/parquet/steam/reviews/reviews.parquet'
+chunk_size = 100_000
+
+# Crear directorio de salida si no existe
+os.makedirs(os.path.dirname(parquet_file), exist_ok=True)
 
 # Aplicando formato fijo para columnas (previene inferencia erronea)
 csv_dtypes = {
