@@ -1,0 +1,41 @@
+# Scripts utilizados para levantar la infraestructura para inferencia en tiempo real
+# Nube: Google Cloud
+# Project ID: working-area-max
+# Ejecutado en Windows Powershell, el cual usa (`) como caracter de escape. Otras terminales utilizan (\) en su lugar.
+# ------------------------------------------------------------------------------------------------
+
+# Paso 1: Instalar gCloud https://cloud.google.com/sdk/docs/install y validar
+# 
+gcloud --version
+
+# Paso 2: Autenticar el usuario y definir el proyecto
+# 
+gcloud auth login
+gcloud config set project working-area-max
+
+# Paso 3: Habilitar APIs necesarioas:
+# 
+gcloud services enable `
+  run.googleapis.com `
+  cloudbuild.googleapis.com `
+  artifactregistry.googleapis.com `
+  bigquery.googleapis.com `
+  storage.googleapis.com
+
+# Paso 4: Navegar a la carpeta donde estan los archivos a empaquetar
+# 
+cd "C:\Users\Max\Documents\Master\UCM\TFM\ucm_tfm\cloud_run\recommender-service"
+
+# Paso 5: Someter el deploy en Cloud Run
+# 
+gcloud run deploy als-recommender `
+  --source . `
+  --memory 512Mi `
+  --cpu 1 `
+  --min-instances 0 `
+  --max-instances 3 `
+  --timeout 60 `
+  --allow-unauthenticated `
+  --region us-central1 `
+  --project working-area-max `
+  --set-env-vars "^:^STEAM_API_KEY=MI_API_KEY_DE_STEAM:EXCLUDED_APPIDS="
