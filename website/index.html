@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Motor de Recomendación · ALS Steam</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #12151C;
+    --panel: #1B1F2A;
+    --panel-alt: #212635;
+    --border: #2A3040;
+    --text: #EDEFF4;
+    --text-muted: #8B93A7;
+    --text-faint: #5B6274;
+    --accent: #4FD8C4;
+    --accent-dim: #2E5B54;
+    --accent-glow: rgba(79, 216, 196, 0.15);
+    --amber: #E8A64C;
+    --danger: #E2685A;
+    --radius: 10px;
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, var(--accent-glow), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 10%, rgba(232, 166, 76, 0.06), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .shell {
+    position: relative;
+    z-index: 1;
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+
+  /* ---------- Header ---------- */
+  header.hero {
+    margin-bottom: 40px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(30px, 4.5vw, 44px);
+    font-weight: 600;
+    line-height: 1.08;
+    margin: 0 0 14px;
+    letter-spacing: -0.01em;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .hero p {
+    max-width: 560px;
+    color: var(--text-muted);
+    font-size: 15.5px;
+    margin: 0;
+  }
+
+  /* ---------- Tabs ---------- */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+  }
+
+  .tab-btn {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-faint);
+    background: none;
+    border: none;
+    padding: 12px 6px;
+    margin-right: 20px;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.15s ease;
+  }
+
+  .tab-btn:hover { color: var(--text-muted); }
+
+  .tab-btn.active { color: var(--text); }
+
+  .tab-btn.active::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -1px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  .tab-btn .tab-idx {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-faint);
+    margin-right: 8px;
+  }
+  .tab-btn.active .tab-idx { color: var(--accent); }
+
+  .panel {
+    display: none;
+  }
+  .panel.active {
+    display: block;
+    animation: fadeUp 0.25s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---------- Card / form ---------- */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+
+  label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+    margin-bottom: 8px;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 14.5px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  input[type="text"]::placeholder { color: var(--text-faint); }
+
+  .row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .field { flex: 1; min-width: 220px; }
+  .field-slim { width: 110px; flex: none; }
+
+  button.primary {
+    font-family: var(--font-display);
+    font-size: 14.5px;
+    font-weight: 600;
+    color: #0D1410;
+    background: var(--accent);
+    border: none;
+    padding: 12px 22px;
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: filter 0.15s ease, transform 0.1s ease;
+  }
+  button.primary:hover { filter: brightness(1.08); }
+  button.primary:active { transform: translateY(1px); }
+  button.primary:disabled {
+    background: var(--border);
+    color: var(--text-faint);
+    cursor: not-allowed;
+  }
+
+  .hint {
+    font-size: 12.5px;
+    color: var(--text-faint);
+    margin-top: 10px;
+  }
+
+  .hint code {
+    font-family: var(--font-mono);
+    background: var(--panel-alt);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--text-muted);
+  }
+
+  /* ---------- Search + chips (tab items) ---------- */
+  .search-wrap { position: relative; }
+
+  .search-results {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0; right: 0;
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 20;
+    display: none;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+  }
+  .search-results.open { display: block; }
+
+  .search-result-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+  }
+  .search-result-item:last-child { border-bottom: none; }
+  .search-result-item:hover { background: rgba(79, 216, 196, 0.07); }
+
+  .search-result-item img {
+    width: 46px;
+    height: 21px;
+    object-fit: cover;
+    border-radius: 3px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  .search-result-item .name {
+    font-size: 13.5px;
+    color: var(--text);
+  }
+  .search-result-item .id {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-left: auto;
+  }
+
+  .search-empty {
+    padding: 14px 12px;
+    font-size: 13px;
+    color: var(--text-faint);
+    text-align: center;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+    min-height: 0;
+  }
+
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    padding: 6px 8px 6px 6px;
+    border-radius: 100px;
+    font-size: 13px;
+  }
+
+  .chip img {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    border-radius: 6px;
+  }
+
+  .chip .remove {
+    background: none;
+    border: none;
+    color: var(--text-faint);
+    font-size: 15px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 4px;
+  }
+  .chip .remove:hover { color: var(--danger); }
+
+  /* ---------- Results ---------- */
+  .results-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 40px 0 16px;
+  }
+
+  .results-head h2 {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .results-head .count {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-faint);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+  }
+
+  .rec-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+  .rec-card:hover {
+    border-color: var(--accent-dim);
+    transform: translateY(-2px);
+  }
+
+  .rec-card .banner {
+    width: 100%;
+    aspect-ratio: 460 / 215;
+    background: var(--panel-alt);
+    object-fit: cover;
+    display: block;
+  }
+
+  .rec-card .body {
+    padding: 14px 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+  }
+
+  .rec-card .rank {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+
+  .rec-card h3 {
+    font-family: var(--font-display);
+    font-size: 15.5px;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.25;
+  }
+
+  .rec-card .genres {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: -4px;
+  }
+
+  .score-row {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .score-bar {
+    flex: 1;
+    height: 5px;
+    background: var(--panel-alt);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+    border-radius: 3px;
+  }
+
+  .score-label {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  /* ---------- States ---------- */
+  .status-msg {
+    padding: 14px 16px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    margin-top: 16px;
+    display: none;
+    align-items: center;
+    gap: 10px;
+  }
+  .status-msg.show { display: flex; }
+  .status-msg.loading {
+    background: rgba(79, 216, 196, 0.08);
+    border: 1px solid var(--accent-dim);
+    color: var(--accent);
+  }
+  .status-msg.error {
+    background: rgba(226, 104, 90, 0.08);
+    border: 1px solid rgba(226, 104, 90, 0.35);
+    color: var(--danger);
+  }
+
+  .spinner {
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text-faint);
+    font-size: 13.5px;
+  }
+
+  footer {
+    margin-top: 64px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--text-faint);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  @media (max-width: 560px) {
+    .shell { padding: 32px 16px 64px; }
+    .row { flex-direction: column; align-items: stretch; }
+    .field-slim { width: 100%; }
+    footer { flex-direction: column; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="hero">
+    <div class="eyebrow">ALS · Filtrado colaborativo</div>
+    <h1>Encuentra tu próximo juego<br>por <span>afinidad de vectores</span></h1>
+    <p>Motor de recomendaciones entrenado con más de 100 millones de reseñas de Steam. Busca directamente tu perfil de usuario, o genera una recomendación a partir de los juegos que ya te gustan.</p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="user"><span class="tab-idx">01</span>Por User ID</button>
+    <button class="tab-btn" data-tab="items"><span class="tab-idx">02</span>Por juegos que me gustan</button>
+  </nav>
+
+  <!-- TAB 1: por user_id -->
+  <section class="panel active" id="panel-user">
+    <div class="card">
+      <div class="row">
+        <div class="field">
+          <label for="user-id-input">SteamID64</label>
+          <input type="text" id="user-id-input" placeholder="76561197960265745" inputmode="numeric">
+        </div>
+        <div class="field-slim">
+          <label for="user-n-input">Top N</label>
+          <input type="text" id="user-n-input" value="10" inputmode="numeric">
+        </div>
+        <button class="primary" id="user-submit">Recomendar</button>
+      </div>
+      <p class="hint">Prueba con <code>76561197960265745</code> — un usuario conocido dentro de la base de entrenamiento.</p>
+    </div>
+    <div class="status-msg" id="user-status"></div>
+    <div id="user-results"></div>
+  </section>
+
+  <!-- TAB 2: por lista de juegos -->
+  <section class="panel" id="panel-items">
+    <div class="card">
+      <label for="game-search-input">Buscar juego por nombre</label>
+      <div class="search-wrap">
+        <input type="text" id="game-search-input" placeholder="Ej: Half-Life, Portal, Stardew...">
+        <div class="search-results" id="search-results"></div>
+      </div>
+      <div class="chips" id="selected-chips"></div>
+      <div class="row" style="margin-top:18px;">
+        <div class="field-slim">
+          <label for="items-n-input">Top N</label>
+          <input type="text" id="items-n-input" value="10" inputmode="numeric">
+        </div>
+        <button class="primary" id="items-submit" disabled>Recomendar</button>
+      </div>
+      <p class="hint">Elige uno o más juegos. El motor promedia sus vectores para simular un perfil y recomendar en basado en esto.</p>
+    </div>
+    <div class="status-msg" id="items-status"></div>
+    <div id="items-results"></div>
+  </section>
+
+  <footer>
+    <span>ALS · factors=24 · 78,376 juegos indexados</span>
+    <span>TFM  - Max· UCM 2026</span>
+  </footer>
+
+</div>
+
+<script>
+  const API_BASE = "https://als-recommender-188585994627.us-central1.run.app";
+
+  // ---------- Tabs ----------
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("panel-" + btn.dataset.tab).classList.add("active");
+    });
+  });
+
+  // ---------- Helpers ----------
+  function setStatus(el, mode, text) {
+    el.className = "status-msg show " + mode;
+    el.innerHTML = mode === "loading"
+      ? `<span class="spinner"></span><span>${text}</span>`
+      : `<span>${text}</span>`;
+  }
+  function clearStatus(el) {
+    el.className = "status-msg";
+    el.innerHTML = "";
+  }
+
+  function steamUrl(itemId) {
+    return `https://store.steampowered.com/app/${itemId}/`;
+  }
+
+  function renderResults(container, headEl, countEl, recs) {
+    if (!recs.length) {
+      container.innerHTML = `<div class="empty-state">Sin resultados. Prueba con otro ID o con más juegos seleccionados.</div>`;
+      return;
+    }
+    const maxScore = Math.max(...recs.map(r => r.score));
+    container.innerHTML = `
+      <div class="grid">
+        ${recs.map((r, i) => {
+          const pct = maxScore > 0 ? Math.max(6, (r.score / maxScore) * 100) : 0;
+          const img = r.header_image || "";
+          return `
+            <a class="rec-card" href="${steamUrl(r.item_id)}" target="_blank" rel="noopener">
+              ${img ? `<img class="banner" src="${img}" alt="${r.name || 'Juego'}" loading="lazy">` : `<div class="banner"></div>`}
+              <div class="body">
+                <div class="rank">#${String(i + 1).padStart(2, "0")} · appid ${r.item_id}</div>
+                <h3>${r.name || "Sin nombre en catálogo"}</h3>
+                ${r.genres ? `<div class="genres">${r.genres}</div>` : ""}
+                <div class="score-row">
+                  <div class="score-bar"><div class="score-bar-fill" style="width:${pct}%"></div></div>
+                  <div class="score-label">${r.score.toFixed(3)}</div>
+                </div>
+              </div>
+            </a>`;
+        }).join("")}
+      </div>
+    `;
+  }
+
+  // ---------- Tab 1: por user_id ----------
+  const userInput = document.getElementById("user-id-input");
+  const userN = document.getElementById("user-n-input");
+  const userStatus = document.getElementById("user-status");
+  const userResults = document.getElementById("user-results");
+  const userSubmit = document.getElementById("user-submit");
+
+  async function submitUser() {
+    const userId = userInput.value.trim();
+    if (!userId) {
+      setStatus(userStatus, "error", "Ingresa un SteamID64 para continuar.");
+      return;
+    }
+    userResults.innerHTML = "";
+    setStatus(userStatus, "loading", "Consultando perfil y calculando afinidades...");
+    userSubmit.disabled = true;
+    try {
+      const res = await fetch(`${API_BASE}/recommend/user`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId, n: parseInt(userN.value) || 10 })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setStatus(userStatus, "error", data.detail || "No se pudo obtener la recomendación.");
+        return;
+      }
+      clearStatus(userStatus);
+      renderResults(userResults, null, null, data.recommendations);
+    } catch (err) {
+      setStatus(userStatus, "error", "Error de conexión con el servicio. Intenta de nuevo.");
+    } finally {
+      userSubmit.disabled = false;
+    }
+  }
+  userSubmit.addEventListener("click", submitUser);
+  userInput.addEventListener("keydown", e => { if (e.key === "Enter") submitUser(); });
+
+  // ---------- Tab 2: búsqueda + chips + por items ----------
+  const searchInput = document.getElementById("game-search-input");
+  const searchResultsEl = document.getElementById("search-results");
+  const chipsEl = document.getElementById("selected-chips");
+  const itemsN = document.getElementById("items-n-input");
+  const itemsStatus = document.getElementById("items-status");
+  const itemsResults = document.getElementById("items-results");
+  const itemsSubmit = document.getElementById("items-submit");
+
+  let selectedGames = [];   // { item_id, name, header_image }
+  let searchTimer = null;
+
+  function renderChips() {
+    chipsEl.innerHTML = selectedGames.map(g => `
+      <div class="chip" data-id="${g.item_id}">
+        ${g.header_image ? `<img src="${g.header_image}" alt="">` : ""}
+        <span>${g.name}</span>
+        <button class="remove" aria-label="Quitar">&times;</button>
+      </div>
+    `).join("");
+    chipsEl.querySelectorAll(".chip .remove").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const id = parseInt(e.target.closest(".chip").dataset.id);
+        selectedGames = selectedGames.filter(g => g.item_id !== id);
+        renderChips();
+        itemsSubmit.disabled = selectedGames.length === 0;
+      });
+    });
+    itemsSubmit.disabled = selectedGames.length === 0;
+  }
+
+  function closeSearchResults() {
+    searchResultsEl.classList.remove("open");
+    searchResultsEl.innerHTML = "";
+  }
+
+  async function doSearch(q) {
+    try {
+      const res = await fetch(`${API_BASE}/search/games?q=${encodeURIComponent(q)}&limit=8`);
+      const data = await res.json();
+      if (!res.ok || !data.results || !data.results.length) {
+        searchResultsEl.innerHTML = `<div class="search-empty">Sin coincidencias para "${q}"</div>`;
+        searchResultsEl.classList.add("open");
+        return;
+      }
+      searchResultsEl.innerHTML = data.results
+        .filter(g => !selectedGames.some(s => s.item_id === g.item_id))
+        .map(g => `
+          <div class="search-result-item" data-id="${g.item_id}" data-name="${g.name.replace(/"/g, '&quot;')}" data-img="${g.header_image || ''}">
+            ${g.header_image ? `<img src="${g.header_image}" alt="">` : `<div style="width:46px;height:21px;background:var(--border);border-radius:3px;"></div>`}
+            <span class="name">${g.name}</span>
+            <span class="id">appid ${g.item_id}</span>
+          </div>
+        `).join("");
+      searchResultsEl.classList.add("open");
+      searchResultsEl.querySelectorAll(".search-result-item").forEach(item => {
+        item.addEventListener("click", () => {
+          selectedGames.push({
+            item_id: parseInt(item.dataset.id),
+            name: item.dataset.name,
+            header_image: item.dataset.img
+          });
+          renderChips();
+          searchInput.value = "";
+          closeSearchResults();
+        });
+      });
+    } catch (err) {
+      searchResultsEl.innerHTML = `<div class="search-empty">Error al buscar. Vuelve a intentarlo.</div>`;
+      searchResultsEl.classList.add("open");
+    }
+  }
+
+  searchInput.addEventListener("input", () => {
+    const q = searchInput.value.trim();
+    clearTimeout(searchTimer);
+    if (q.length < 2) { closeSearchResults(); return; }
+    searchTimer = setTimeout(() => doSearch(q), 300);
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".search-wrap")) closeSearchResults();
+  });
+
+  async function submitItems() {
+    if (!selectedGames.length) return;
+    itemsResults.innerHTML = "";
+    setStatus(itemsStatus, "loading", "Promediando vectores y calculando afinidades...");
+    itemsSubmit.disabled = true;
+    try {
+      const res = await fetch(`${API_BASE}/recommend/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          item_ids: selectedGames.map(g => g.item_id),
+          n: parseInt(itemsN.value) || 10
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setStatus(itemsStatus, "error", data.detail || "No se pudo obtener la recomendación.");
+        return;
+      }
+      clearStatus(itemsStatus);
+      renderResults(itemsResults, null, null, data.recommendations);
+    } catch (err) {
+      setStatus(itemsStatus, "error", "Error de conexión con el servicio. Vuelve a intentarlo.");
+    } finally {
+      itemsSubmit.disabled = selectedGames.length === 0;
+    }
+  }
+  itemsSubmit.addEventListener("click", submitItems);
+</script>
+</body>
+</html>
