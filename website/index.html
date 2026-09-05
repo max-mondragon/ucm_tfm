@@ -53,14 +53,25 @@
   .shell {
     position: relative;
     z-index: 1;
-    max-width: 1040px;
+    max-width: 1240px;
     margin: 0 auto;
     padding: 48px 24px 96px;
   }
 
   /* ---------- Header ---------- */
   header.hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 40px;
+    align-items: center;
     margin-bottom: 40px;
+  }
+
+  .hero-visual {
+    justify-self: end;
+    width: 100%;
+    max-width: 340px;
+    opacity: 0.92;
   }
 
   .eyebrow {
@@ -86,20 +97,29 @@
 
   h1 {
     font-family: var(--font-display);
-    font-size: clamp(30px, 4.5vw, 44px);
+    font-size: clamp(32px, 3.4vw, 50px);
     font-weight: 600;
     line-height: 1.08;
-    margin: 0 0 14px;
+    margin: 0 0 16px;
     letter-spacing: -0.01em;
   }
 
   h1 span { color: var(--accent); }
 
   .hero p {
-    max-width: 560px;
+    max-width: 620px;
     color: var(--text-muted);
-    font-size: 15.5px;
+    font-size: 16px;
     margin: 0;
+  }
+
+  @media (max-width: 860px) {
+    header.hero {
+      grid-template-columns: 1fr;
+    }
+    .hero-visual {
+      display: none;
+    }
   }
 
   /* ---------- Tabs ---------- */
@@ -173,6 +193,7 @@
     color: var(--text-muted);
     letter-spacing: 0.02em;
     margin-bottom: 8px;
+    white-space: nowrap;
   }
 
   input[type="text"] {
@@ -197,7 +218,7 @@
 
   .row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
   .field { flex: 1; min-width: 220px; }
-  .field-slim { width: 110px; flex: none; }
+  .field-slim { width: 168px; flex: none; }
 
   button.primary {
     font-family: var(--font-display);
@@ -473,6 +494,21 @@
     font-size: 13.5px;
   }
 
+  .coverage-note {
+    display: none;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-muted);
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-top: 16px;
+  }
+  .coverage-note.show { display: block; }
+  .coverage-note strong { color: var(--accent); }
+
   footer {
     margin-top: 64px;
     padding-top: 20px;
@@ -486,6 +522,143 @@
     gap: 8px;
   }
 
+  .footer-link {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--text-faint);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    transition: color 0.15s ease, text-decoration-color 0.15s ease;
+  }
+  .footer-link:hover {
+    color: var(--accent);
+    text-decoration-color: var(--accent);
+  }
+
+  /* ---------- Modal ---------- */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(8, 10, 15, 0.72);
+    backdrop-filter: blur(3px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal-box {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    max-width: 480px;
+    width: 100%;
+    padding: 32px 28px 28px;
+    animation: fadeUp 0.2s ease;
+  }
+
+  .modal-box h2 {
+    font-family: var(--font-display);
+    font-size: 21px;
+    font-weight: 600;
+    margin: 4px 0 16px;
+  }
+
+  .modal-box p {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    margin: 0 0 12px;
+    line-height: 1.6;
+  }
+  .modal-box p strong { color: var(--text); font-weight: 600; }
+
+  .modal-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 18px 0 16px;
+  }
+
+  .modal-credit {
+    font-family: var(--font-mono);
+    font-size: 12px !important;
+    color: var(--text-faint) !important;
+  }
+  .modal-credit a { color: var(--accent); }
+
+  .modal-close {
+    position: absolute;
+    top: 14px; right: 14px;
+    background: none;
+    border: none;
+    color: var(--text-faint);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+  .modal-close:hover { color: var(--text); }
+
+  .coverage-num {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    transition: text-decoration-color 0.15s ease;
+  }
+  .coverage-num:hover { text-decoration-color: var(--accent); }
+  .coverage-num:disabled {
+    color: var(--text-muted);
+    cursor: default;
+    text-decoration: none;
+  }
+
+  .modal-box.wide { max-width: 520px; }
+
+  .game-list {
+    max-height: 340px;
+    overflow-y: auto;
+    margin: 0 -4px;
+    padding: 0 4px;
+  }
+
+  .game-list-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 6px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .game-list-item:last-child { border-bottom: none; }
+
+  .game-list-item .glid {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    flex-shrink: 0;
+    width: 68px;
+  }
+
+  .game-list-item .glname {
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   @media (max-width: 560px) {
     .shell { padding: 32px 16px 64px; }
     .row { flex-direction: column; align-items: stretch; }
@@ -495,6 +668,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
+    .hero-visual animate { display: none; }
   }
 
   :focus-visible {
@@ -507,14 +681,48 @@
 <div class="shell">
 
   <header class="hero">
-    <div class="eyebrow">ALS · Filtrado colaborativo</div>
-    <h1>Encuentra tu próximo juego<br>por <span>afinidad de vectores</span></h1>
-    <p>Motor de recomendaciones entrenado con más de 100 millones de reseñas de Steam. Busca directamente tu perfil de usuario, o genera una recomendación a partir de los juegos que ya te gustan.</p>
+    <div>
+      <div class="eyebrow">ALS · Filtrado colaborativo</div>
+      <h1>Motor de recomendaciones<br>para <span>Video Juegos</span></h1>
+      <p>Con un análisis de más de 100 millones de reseñas de videojuegos en Steam, este motor de recomendaciones identifica patrones de gusto reales entre millones de jugadores mediante el algoritmo ALS (Alternating Least Squares, o Mínimos Cuadrados Alternativos). Explora tus recomendaciones a partir de tu perfil, de tus juegos favoritos, o directamente desde tu biblioteca de Steam.</p>
+    </div>
+    <svg class="hero-visual" viewBox="0 0 340 260" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <line x1="60" y1="70" x2="150" y2="40" stroke="#2A3040" stroke-width="1.5"/>
+      <line x1="150" y1="40" x2="255" y2="75" stroke="#2A3040" stroke-width="1.5"/>
+      <line x1="60" y1="70" x2="90" y2="150" stroke="#2A3040" stroke-width="1.5"/>
+      <line x1="150" y1="40" x2="180" y2="135" stroke="#4FD8C4" stroke-width="1.6" opacity="0.55"/>
+      <line x1="180" y1="135" x2="90" y2="150" stroke="#4FD8C4" stroke-width="1.6" opacity="0.75"/>
+      <line x1="180" y1="135" x2="255" y2="75" stroke="#2A3040" stroke-width="1.5"/>
+      <line x1="90" y1="150" x2="70" y2="215" stroke="#2A3040" stroke-width="1.5"/>
+      <line x1="180" y1="135" x2="200" y2="210" stroke="#4FD8C4" stroke-width="1.6" opacity="0.6"/>
+      <line x1="255" y1="75" x2="270" y2="165" stroke="#2A3040" stroke-width="1.5"/>
+      <line x1="200" y1="210" x2="270" y2="165" stroke="#2A3040" stroke-width="1.5"/>
+      <line x1="70" y1="215" x2="200" y2="210" stroke="#2A3040" stroke-width="1.5"/>
+
+      <circle cx="60" cy="70" r="4" fill="#5B6274"/>
+      <circle cx="150" cy="40" r="5.5" fill="#4FD8C4"/>
+      <circle cx="255" cy="75" r="4" fill="#5B6274"/>
+      <circle cx="180" cy="135" r="6.5" fill="#4FD8C4"/>
+      <circle cx="90" cy="150" r="4.5" fill="#8B93A7"/>
+      <circle cx="270" cy="165" r="4" fill="#5B6274"/>
+      <circle cx="70" cy="215" r="4" fill="#5B6274"/>
+      <circle cx="200" cy="210" r="5" fill="#E8A64C"/>
+
+      <circle cx="150" cy="40" r="5.5" fill="none" stroke="#4FD8C4" stroke-width="1" opacity="0.4">
+        <animate attributeName="r" values="5.5;13;5.5" dur="3.2s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.4;0;0.4" dur="3.2s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="180" cy="135" r="6.5" fill="none" stroke="#4FD8C4" stroke-width="1" opacity="0.4">
+        <animate attributeName="r" values="6.5;15;6.5" dur="3.2s" begin="0.6s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.4;0;0.4" dur="3.2s" begin="0.6s" repeatCount="indefinite"/>
+      </circle>
+    </svg>
   </header>
 
   <nav class="tabs">
     <button class="tab-btn active" data-tab="user"><span class="tab-idx">01</span>Por User ID</button>
     <button class="tab-btn" data-tab="items"><span class="tab-idx">02</span>Por juegos que me gustan</button>
+    <button class="tab-btn" data-tab="library"><span class="tab-idx">03</span>Por mi biblioteca de Steam</button>
   </nav>
 
   <!-- TAB 1: por user_id -->
@@ -523,15 +731,15 @@
       <div class="row">
         <div class="field">
           <label for="user-id-input">SteamID64</label>
-          <input type="text" id="user-id-input" placeholder="76561197960265745" inputmode="numeric">
+          <input type="text" id="user-id-input" placeholder="76561198324251650" inputmode="numeric">
         </div>
         <div class="field-slim">
-          <label for="user-n-input">Top N</label>
-          <input type="text" id="user-n-input" value="10" inputmode="numeric">
+          <label for="user-n-input">Nº de juegos a listar</label>
+          <input type="text" id="user-n-input" value="16" inputmode="numeric">
         </div>
         <button class="primary" id="user-submit">Recomendar</button>
       </div>
-      <p class="hint">Prueba con <code>76561197960265745</code> — un usuario conocido dentro de la base de entrenamiento.</p>
+      <p class="hint">Prueba con <code>76561198324251650</code> — un usuario conocido dentro de la base de entrenamiento.</p>
     </div>
     <div class="status-msg" id="user-status"></div>
     <div id="user-results"></div>
@@ -548,8 +756,8 @@
       <div class="chips" id="selected-chips"></div>
       <div class="row" style="margin-top:18px;">
         <div class="field-slim">
-          <label for="items-n-input">Top N</label>
-          <input type="text" id="items-n-input" value="10" inputmode="numeric">
+          <label for="items-n-input">Nº de juegos a listar</label>
+          <input type="text" id="items-n-input" value="16" inputmode="numeric">
         </div>
         <button class="primary" id="items-submit" disabled>Recomendar</button>
       </div>
@@ -559,10 +767,58 @@
     <div id="items-results"></div>
   </section>
 
+  <!-- TAB 3: por biblioteca de Steam en vivo -->
+  <section class="panel" id="panel-library">
+    <div class="card">
+      <div class="row">
+        <div class="field">
+          <label for="library-id-input">SteamID64</label>
+          <input type="text" id="library-id-input" placeholder="76561198324251650" inputmode="numeric">
+        </div>
+        <div class="field-slim">
+          <label for="library-n-input">Nº de juegos a listar</label>
+          <input type="text" id="library-n-input" value="16" inputmode="numeric">
+        </div>
+        <button class="primary" id="library-submit">Recomendar</button>
+      </div>
+      <p class="hint">Consulta tu biblioteca actual directamente desde Steam. Requiere que tu perfil y detalles del juego sean <strong>públicos</strong> — si es privado, no se podrá acceder a la lista de juegos.</p>
+    </div>
+    <div class="status-msg" id="library-status"></div>
+    <div class="coverage-note" id="library-coverage"></div>
+    <div id="library-results"></div>
+  </section>
+
   <footer>
-    <span>ALS · factors=24 · 78,376 juegos indexados</span>
-    <span>TFM  - Max· UCM 2026</span>
+    <span>ALS · factors=24 · 78,376 juegos · 17,049,073 usuarios indexados</span>
+    <button class="footer-link" id="details-trigger">Max Mondragón · TFM · UCM 2026</button>
   </footer>
+
+  <!-- Modal de detalles técnicos -->
+  <div class="modal-overlay" id="details-modal">
+    <div class="modal-box">
+      <button class="modal-close" id="modal-close-btn" aria-label="Cerrar">&times;</button>
+      <div class="eyebrow">Acerca del proyecto</div>
+      <h2>Motor de recomendaciones · TFM</h2>
+      <p>Trabajo de Fin de Máster desarrollado por <strong>Max Mondragón</strong> — Universidad Complutense de Madrid, 2026.</p>
+      <p>El modelo de recomendación fue entrenado con <strong>ALS (Alternating Least Squares)</strong> sobre más de 100 millones de reseñas de Steam, generando vectores latentes de 24 dimensiones para 78,376 juegos y 17,049,073 usuarios.</p>
+      <div class="modal-divider"></div>
+      <p class="modal-credit">
+        Entrenamiento implementado con la librería <strong>implicit</strong>, de Ben Frederickson.<br>
+        Licencia MIT · Copyright (c) 2016 Ben Frederickson.<br>
+        <a href="https://github.com/benfred/implicit.git" target="_blank" rel="noopener">github.com/benfred/implicit</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Modal de listado de juegos (coverage) -->
+  <div class="modal-overlay" id="games-list-modal">
+    <div class="modal-box wide">
+      <button class="modal-close" id="games-list-close-btn" aria-label="Cerrar">&times;</button>
+      <div class="eyebrow" id="games-list-eyebrow">Detalle</div>
+      <h2 id="games-list-title">Juegos</h2>
+      <div class="game-list" id="games-list-content"></div>
+    </div>
+  </div>
 
 </div>
 
@@ -580,6 +836,17 @@
   });
 
   // ---------- Helpers ----------
+  const MAX_N = 100;
+
+  function getValidN(inputEl, statusEl) {
+    const n = parseInt(inputEl.value) || 16;
+    if (n > MAX_N) {
+      setStatus(statusEl, "error", `Selecciona hasta un máximo de ${MAX_N} recomendaciones.`);
+      return null;
+    }
+    return n;
+  }
+
   function setStatus(el, mode, text) {
     el.className = "status-msg show " + mode;
     el.innerHTML = mode === "loading"
@@ -637,6 +904,8 @@
       setStatus(userStatus, "error", "Ingresa un SteamID64 para continuar.");
       return;
     }
+    const n = getValidN(userN, userStatus);
+    if (n === null) return;
     userResults.innerHTML = "";
     setStatus(userStatus, "loading", "Consultando perfil y calculando afinidades...");
     userSubmit.disabled = true;
@@ -644,7 +913,7 @@
       const res = await fetch(`${API_BASE}/recommend/user`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId, n: parseInt(userN.value) || 10 })
+        body: JSON.stringify({ user_id: userId, n })
       });
       const data = await res.json();
       if (!res.ok) {
@@ -748,6 +1017,8 @@
 
   async function submitItems() {
     if (!selectedGames.length) return;
+    const n = getValidN(itemsN, itemsStatus);
+    if (n === null) return;
     itemsResults.innerHTML = "";
     setStatus(itemsStatus, "loading", "Promediando vectores y calculando afinidades...");
     itemsSubmit.disabled = true;
@@ -757,7 +1028,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           item_ids: selectedGames.map(g => g.item_id),
-          n: parseInt(itemsN.value) || 10
+          n
         })
       });
       const data = await res.json();
@@ -774,6 +1045,127 @@
     }
   }
   itemsSubmit.addEventListener("click", submitItems);
+
+  // ---------- Tab 3: por biblioteca de Steam en vivo ----------
+  const libraryInput = document.getElementById("library-id-input");
+  const libraryN = document.getElementById("library-n-input");
+  const libraryStatus = document.getElementById("library-status");
+  const libraryCoverage = document.getElementById("library-coverage");
+  const libraryResults = document.getElementById("library-results");
+  const librarySubmit = document.getElementById("library-submit");
+
+  async function submitLibrary() {
+    const steamId = libraryInput.value.trim();
+    if (!steamId) {
+      setStatus(libraryStatus, "error", "Ingresa un SteamID64 para continuar.");
+      return;
+    }
+    const n = getValidN(libraryN, libraryStatus);
+    if (n === null) return;
+    libraryResults.innerHTML = "";
+    libraryCoverage.className = "coverage-note";
+    libraryCoverage.innerHTML = "";
+    setStatus(libraryStatus, "loading", "Consultando tu biblioteca de Steam y calculando afinidades...");
+    librarySubmit.disabled = true;
+    try {
+      const res = await fetch(`${API_BASE}/recommend/live-library`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ steam_id: steamId, n })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const msg = res.status === 404
+          ? "No se pudo acceder a la biblioteca. Verifica que tu perfil y tus detalles de juego sean públicos en la configuración de privacidad de Steam."
+          : (data.detail || "No se pudo obtener la recomendación.");
+        setStatus(libraryStatus, "error", msg);
+        return;
+      }
+      clearStatus(libraryStatus);
+      if (data.coverage) {
+        const c = data.coverage;
+        const ownedBtn = `<button class="coverage-num" data-list="owned">${c.total_owned}</button>`;
+        const matchedBtn = `<button class="coverage-num" data-list="matched">${c.matched_in_model}</button>`;
+        const unmatchedBtn = c.unmatched > 0
+          ? `<button class="coverage-num" data-list="unmatched">${c.unmatched}</button>`
+          : `<span class="coverage-num" style="color:var(--text-muted);text-decoration:none;cursor:default;">0</span>`;
+
+        libraryCoverage.innerHTML = `Se usaron ${matchedBtn} de ${ownedBtn} juegos para el cálculo` +
+          (c.unmatched > 0 ? ` (${unmatchedBtn} no estaban indexados en el modelo entrenado).` : ".");
+        libraryCoverage.classList.add("show");
+
+        libraryCoverage.querySelectorAll(".coverage-num[data-list]").forEach(btn => {
+          btn.addEventListener("click", () => openGamesListModal(btn.dataset.list, c));
+        });
+      }
+      renderResults(libraryResults, null, null, data.recommendations);
+    } catch (err) {
+      setStatus(libraryStatus, "error", "Error de conexión con el servicio. Vuelve a intentarlo..");
+    } finally {
+      librarySubmit.disabled = false;
+    }
+  }
+  librarySubmit.addEventListener("click", submitLibrary);
+  libraryInput.addEventListener("keydown", e => { if (e.key === "Enter") submitLibrary(); });
+
+  // ---------- Modal de detalles ----------
+  const detailsModal = document.getElementById("details-modal");
+  const detailsTrigger = document.getElementById("details-trigger");
+  const modalCloseBtn = document.getElementById("modal-close-btn");
+
+  function openModal() { detailsModal.classList.add("open"); }
+  function closeModal() { detailsModal.classList.remove("open"); }
+
+  detailsTrigger.addEventListener("click", openModal);
+  modalCloseBtn.addEventListener("click", closeModal);
+  detailsModal.addEventListener("click", (e) => {
+    if (e.target === detailsModal) closeModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeModal();
+  });
+
+  // ---------- Modal de listado de juegos (coverage) ----------
+  const gamesListModal = document.getElementById("games-list-modal");
+  const gamesListClose = document.getElementById("games-list-close-btn");
+  const gamesListTitle = document.getElementById("games-list-title");
+  const gamesListEyebrow = document.getElementById("games-list-eyebrow");
+  const gamesListContent = document.getElementById("games-list-content");
+
+  const LIST_CONFIG = {
+    owned:     { key: "owned_games",     eyebrow: "Biblioteca completa",      title: (n) => `${n} juegos en la biblioteca` },
+    matched:   { key: "matched_games",   eyebrow: "Usados en el cálculo",     title: (n) => `${n} juegos indexados en el modelo` },
+    unmatched: { key: "unmatched_games", eyebrow: "Fuera del modelo",         title: (n) => `${n} juegos no indexados` },
+  };
+
+  function openGamesListModal(listType, coverage) {
+    const config = LIST_CONFIG[listType];
+    const games = coverage[config.key];
+    if (!games) return;
+
+    gamesListEyebrow.textContent = config.eyebrow;
+    gamesListTitle.textContent = config.title(games.length);
+    gamesListContent.innerHTML = games
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(g => `
+        <div class="game-list-item">
+          <span class="glid">appid ${g.item_id}</span>
+          <span class="glname">${g.name}</span>
+        </div>
+      `).join("");
+    gamesListModal.classList.add("open");
+  }
+
+  function closeGamesListModal() { gamesListModal.classList.remove("open"); }
+
+  gamesListClose.addEventListener("click", closeGamesListModal);
+  gamesListModal.addEventListener("click", (e) => {
+    if (e.target === gamesListModal) closeGamesListModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeGamesListModal();
+  });
 </script>
 </body>
 </html>
