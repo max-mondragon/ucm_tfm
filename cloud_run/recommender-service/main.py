@@ -119,6 +119,11 @@ class ByItemsRequest(BaseModel):
     n: int = Field(16, ge=1, le=100)
 
 
+class ByLiveLibraryRequest(BaseModel):
+    steam_id: str = Field(..., description="SteamID64 del usuario")
+    n: int = Field(16, ge=1, le=100)
+
+
 class GameSearchResult(BaseModel):
     item_id: int
     name: str
@@ -167,6 +172,37 @@ def compute_top_n(user_vector: np.ndarray, exclude_idx: set[int], n: int) -> lis
     top_idx = top_idx[np.argsort(-scores[top_idx])]
 
     return [(int(item_ids[i]), float(scores[i])) for i in top_idx]
+
+
+def fetch_owned_games(steam_id: str) -> list[dict] | None:
+    """
+    Consulta la Steam Web API (GetOwnedGames) para obtener la biblioteca actual
+    de un usuario, incluyendo appid y nombre. Devuelve None si el perfil es
+    privado, no existe, o no tiene juegos.
+    """
+    if not STEAM_API_KEY:
+        raise HTTPException(status_code=500, detail="Steam API key no configurada en el servicio.")
+
+    url = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/"
+    params = {
+        "key": STEAM_API_KEY,
+        "steamid": steam_id,
+        "format": "json",
+        "include_appinfo": "true",
+    }
+    try:
+        resp = httpx.get(url, params=params, timeout=8.0)
+        resp.raise_for_status()
+    except httpx.HTTPError as e:
+        logger.warning(f"Error consultando Steam API para {steam_id}: {e}")
+        raise HTTPException(status_code=502, detail="No se pudo consultar la Steam Web API.")
+
+    data = resp.json().get("response", {})
+    games = data.get("games")
+    if not games:
+        # Perfil privado, steam_id inexistente, o biblioteca vacía -- Steam no distingue estos casos
+        return None
+    return [{"item_id": g["appid"], "name": g.get("name", "Sin nombre")} for g in games]
 
 
 def search_games_by_name(query_text: str, limit: int = 10) -> list[dict]:
@@ -281,6 +317,46 @@ def search_games(q: str, limit: int = 10):
     limit = max(1, min(limit, 25))
     results = search_games_by_name(q.strip(), limit)
     return GameSearchResponse(results=[GameSearchResult(**r) for r in results])
+
+
+@app.post("/recommend/live-library", response_model=RecommendResponse)
+def recommend_by_live_library(req: ByLiveLibraryRequest):
+    owned_games = fetch_owned_games(req.steam_id)
+    if owned_games is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No se pudo obtener la biblioteca. El perfil puede ser privado, no existir, o no tener juegos.",
+        )
+
+    id_to_idx = STATE["id_to_idx"]
+    norm_items = STATE["norm_items"]
+
+    matched_games = [g for g in owned_games if g["item_id"] in id_to_idx]
+    unmatched_games = [g for g in owned_games if g["item_id"] not in id_to_idx]
+
+    if not matched_games:
+        raise HTTPException(
+            status_code=400,
+            detail="Ninguno de los juegos de la biblioteca está indexado en el modelo entrenado.",
+        )
+
+    coverage = {
+        "total_owned": len(owned_games),
+        "matched_in_model": len(matched_games),
+        "unmatched": len(unmatched_games),
+        "owned_games": owned_games,
+        "matched_games": matched_games,
+        "unmatched_games": unmatched_games,
+    }
+
+    idxs = [id_to_idx[g["item_id"]] for g in matched_games]
+    synthetic_vector = norm_items[idxs].mean(axis=0)
+    norm = np.linalg.norm(synthetic_vector)
+    if norm > 0:
+        synthetic_vector = synthetic_vector / norm
+
+    recs = compute_top_n(synthetic_vector, exclude_idx=set(idxs), n=req.n)
+    return build_response(recs, coverage=coverage)
 
 
 @app.post("/recommend/user", response_model=RecommendResponse)
