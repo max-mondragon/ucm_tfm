@@ -81,7 +81,7 @@ models/                                         # Directorio para los modelos en
 | Usuarios / Juegos | 17M / 78,376 |
 | Factores latentes | 24 |
 | HitRate@10 | 0.144 |
-| Mejora vs. recomendación aleatoria | ~830x |
+| Mejora vs. recomendación aleatoria | ~1133x |
 | Mejora vs. ranking de popularidad | +21% |
 
 | Archivos de vectores | Tamaño |
