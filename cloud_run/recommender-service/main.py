@@ -4,8 +4,10 @@ Cloud Run + FastAPI
 
 Endpoints:
   GET  /health              -> chequeo de salud / estado de carga
-  POST /recommend/user      -> recomendaciones para un usuario conocido (via BigQuery user_vectors, o Firestore a futuro)
+  POST /recommend/user      -> recomendaciones para un usuario conocido (via BigQuery user_factors)
   POST /recommend/items     -> recomendaciones "cold start" a partir de una lista de item_ids (promedio de vectores)
+  POST /recommend/live-library -> recomendaciones a partir de la biblioteca actual de Steam (Steam Web API)
+  GET  /search/games        -> búsqueda de juegos por nombre (BigQuery)
 """
 
 import os
@@ -33,12 +35,15 @@ BQ_ITEM_LOOKUP_TABLE = os.environ.get("BQ_ITEM_LOOKUP_TABLE", "working-area-max.
 BQ_USER_FACTORS_TABLE = os.environ.get("BQ_USER_FACTORS_TABLE", "working-area-max.model_artifacts.user_factors")
 STEAM_API_KEY = os.environ.get("STEAM_API_KEY", "")
 
-# Lista de AppIDs a excluir manualmente de las recomendaciones (separados por coma).
+# Lista de AppIDs a excluir manualmente de las recomendaciones.
+# Acepta coma o punto y coma como separador (punto y coma evita conflicto
+# con el delimitador de pares KEY=VALUE que usa gcloud --set-env-vars).
 # Útil para casos donde steam_games clasifica software/herramientas como juego válido
 # (ej. 431960 = Wallpaper Engine). No requiere tocar item_factors.npz ni BigQuery.
+_raw_excluded = os.environ.get("EXCLUDED_APPIDS", "431960").replace(";", ",")
 EXCLUDED_APPIDS = {
     int(x.strip())
-    for x in os.environ.get("EXCLUDED_APPIDS", "431960").split(",")
+    for x in _raw_excluded.split(",")
     if x.strip().isdigit()
 }
 
@@ -110,7 +115,7 @@ app.add_middleware(
 # Modelos de request/response
 # --------------------------------------------------------------------------
 class ByUserRequest(BaseModel):
-    user_id: str = Field(..., description="SteamID64 del usuario")
+    user_id: str = Field(..., description="SteamID64 o nombre de perfil (vanity URL) del usuario")
     n: int = Field(16, ge=1, le=100)
 
 
@@ -120,7 +125,7 @@ class ByItemsRequest(BaseModel):
 
 
 class ByLiveLibraryRequest(BaseModel):
-    steam_id: str = Field(..., description="SteamID64 del usuario")
+    steam_id: str = Field(..., description="SteamID64 o nombre de perfil (vanity URL) del usuario")
     n: int = Field(16, ge=1, le=100)
 
 
@@ -145,6 +150,45 @@ class RecommendationItem(BaseModel):
 class RecommendResponse(BaseModel):
     recommendations: list[RecommendationItem]
     coverage: dict | None = None
+    resolved_steam_id: str | None = None  # informativo: útil cuando se resolvió un vanity name
+
+
+# --------------------------------------------------------------------------
+# Resolución de identificador de usuario: SteamID64 directo, o vanity URL/nombre de perfil
+# --------------------------------------------------------------------------
+def resolve_steam_id(identifier: str) -> str:
+    """
+    Acepta un SteamID64 (numérico, 17 dígitos) o un nombre de perfil público
+    (vanity URL, ej. 'mxjzm' de steamcommunity.com/id/mxjzm). Si ya es un
+    SteamID64 válido, lo devuelve sin llamadas extra. Si no, lo resuelve
+    contra la Steam Web API.
+    """
+    identifier = identifier.strip()
+
+    if identifier.isdigit() and len(identifier) >= 15:
+        return identifier
+
+    if not STEAM_API_KEY:
+        raise HTTPException(status_code=500, detail="Steam API key no configurada en el servicio.")
+
+    url = "https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/"
+    params = {"key": STEAM_API_KEY, "vanityurl": identifier, "format": "json"}
+    try:
+        resp = httpx.get(url, params=params, timeout=8.0)
+        resp.raise_for_status()
+    except httpx.HTTPError as e:
+        logger.warning(f"Error resolviendo vanity URL '{identifier}': {e}")
+        raise HTTPException(status_code=502, detail="No se pudo consultar la Steam Web API.")
+
+    data = resp.json().get("response", {})
+    if data.get("success") == 1 and data.get("steamid"):
+        logger.info(f"Vanity URL '{identifier}' resuelto a SteamID64 {data['steamid']}")
+        return data["steamid"]
+
+    raise HTTPException(
+        status_code=404,
+        detail=f"No se encontró ningún perfil de Steam para '{identifier}'.",
+    )
 
 
 # --------------------------------------------------------------------------
@@ -278,7 +322,11 @@ def fetch_user_vector(user_id: str) -> np.ndarray | None:
     return np.array(raw, dtype=np.float32)
 
 
-def build_response(recs: list[tuple[int, float]], coverage: dict | None = None) -> RecommendResponse:
+def build_response(
+    recs: list[tuple[int, float]],
+    coverage: dict | None = None,
+    resolved_steam_id: str | None = None,
+) -> RecommendResponse:
     """Enriquecer resultados de scoring con metadata de BigQuery."""
     ids = [r[0] for r in recs]
     metadata = fetch_metadata(ids)
@@ -295,7 +343,7 @@ def build_response(recs: list[tuple[int, float]], coverage: dict | None = None) 
                 genres=meta.get("genres"),
             )
         )
-    return RecommendResponse(recommendations=items, coverage=coverage)
+    return RecommendResponse(recommendations=items, coverage=coverage, resolved_steam_id=resolved_steam_id)
 
 
 # --------------------------------------------------------------------------
@@ -321,7 +369,9 @@ def search_games(q: str, limit: int = 10):
 
 @app.post("/recommend/live-library", response_model=RecommendResponse)
 def recommend_by_live_library(req: ByLiveLibraryRequest):
-    owned_games = fetch_owned_games(req.steam_id)
+    steam_id = resolve_steam_id(req.steam_id)
+
+    owned_games = fetch_owned_games(steam_id)
     if owned_games is None:
         raise HTTPException(
             status_code=404,
@@ -356,12 +406,14 @@ def recommend_by_live_library(req: ByLiveLibraryRequest):
         synthetic_vector = synthetic_vector / norm
 
     recs = compute_top_n(synthetic_vector, exclude_idx=set(idxs), n=req.n)
-    return build_response(recs, coverage=coverage)
+    return build_response(recs, coverage=coverage, resolved_steam_id=steam_id)
 
 
 @app.post("/recommend/user", response_model=RecommendResponse)
 def recommend_by_user(req: ByUserRequest):
-    user_vector = fetch_user_vector(req.user_id)
+    steam_id = resolve_steam_id(req.user_id)
+
+    user_vector = fetch_user_vector(steam_id)
     if user_vector is None:
         raise HTTPException(
             status_code=404,
@@ -369,7 +421,7 @@ def recommend_by_user(req: ByUserRequest):
         )
 
     recs = compute_top_n(user_vector, exclude_idx=set(), n=req.n)
-    return build_response(recs)
+    return build_response(recs, resolved_steam_id=steam_id)
 
 
 @app.post("/recommend/items", response_model=RecommendResponse)

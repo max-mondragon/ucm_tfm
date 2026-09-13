@@ -730,8 +730,8 @@
     <div class="card">
       <div class="row">
         <div class="field">
-          <label for="user-id-input">SteamID64</label>
-          <input type="text" id="user-id-input" placeholder="76561198324251650" inputmode="numeric">
+          <label for="user-id-input">SteamID64 o nombre de perfil</label>
+          <input type="text" id="user-id-input" placeholder="76561198324251650">
         </div>
         <div class="field-slim">
           <label for="user-n-input">Nº de juegos a listar</label>
@@ -772,8 +772,8 @@
     <div class="card">
       <div class="row">
         <div class="field">
-          <label for="library-id-input">SteamID64</label>
-          <input type="text" id="library-id-input" placeholder="76561198324251650" inputmode="numeric">
+          <label for="library-id-input">SteamID64 o nombre de perfil</label>
+          <input type="text" id="library-id-input" placeholder="76561198324251650">
         </div>
         <div class="field-slim">
           <label for="library-n-input">Nº de juegos a listar</label>
@@ -781,7 +781,7 @@
         </div>
         <button class="primary" id="library-submit">Recomendar</button>
       </div>
-      <p class="hint">Consulta tu biblioteca actual directamente desde Steam. Requiere que tu perfil y detalles del juego sean <strong>públicos</strong> — si es privado, no se podrá acceder a la lista de juegos.</p>
+      <p class="hint">Consulta tu biblioteca actual directamente desde Steam usando tu SteamID64 o tu nombre de perfil (ej. <code>mxjzm</code>). Requiere que tu perfil y detalles del juego sean <strong>públicos</strong> — si es privado, no se podrá acceder a la lista de juegos.</p>
     </div>
     <div class="status-msg" id="library-status"></div>
     <div class="coverage-note" id="library-coverage"></div>
@@ -837,6 +837,7 @@
 
   // ---------- Helpers ----------
   const MAX_N = 100;
+  const DEFAULT_STEAM_ID = "76561198324251650";
 
   function getValidN(inputEl, statusEl) {
     const n = parseInt(inputEl.value) || 16;
@@ -899,11 +900,7 @@
   const userSubmit = document.getElementById("user-submit");
 
   async function submitUser() {
-    const userId = userInput.value.trim();
-    if (!userId) {
-      setStatus(userStatus, "error", "Ingresa un SteamID64 para continuar.");
-      return;
-    }
+    const userId = userInput.value.trim() || DEFAULT_STEAM_ID;
     const n = getValidN(userN, userStatus);
     if (n === null) return;
     userResults.innerHTML = "";
@@ -922,6 +919,12 @@
       }
       clearStatus(userStatus);
       renderResults(userResults, null, null, data.recommendations);
+      if (data.resolved_steam_id && data.resolved_steam_id !== userId) {
+        userResults.insertAdjacentHTML(
+          "afterbegin",
+          `<div class="coverage-note show">Perfil resuelto a SteamID64 <strong>${data.resolved_steam_id}</strong>.</div>`
+        );
+      }
     } catch (err) {
       setStatus(userStatus, "error", "Error de conexión con el servicio. Intenta de nuevo.");
     } finally {
@@ -1055,11 +1058,7 @@
   const librarySubmit = document.getElementById("library-submit");
 
   async function submitLibrary() {
-    const steamId = libraryInput.value.trim();
-    if (!steamId) {
-      setStatus(libraryStatus, "error", "Ingresa un SteamID64 para continuar.");
-      return;
-    }
+    const steamId = libraryInput.value.trim() || DEFAULT_STEAM_ID;
     const n = getValidN(libraryN, libraryStatus);
     if (n === null) return;
     libraryResults.innerHTML = "";
@@ -1082,6 +1081,10 @@
         return;
       }
       clearStatus(libraryStatus);
+      let resolvedNote = "";
+      if (data.resolved_steam_id && data.resolved_steam_id !== steamId) {
+        resolvedNote = `Perfil resuelto a SteamID64 <strong>${data.resolved_steam_id}</strong>.<br>`;
+      }
       if (data.coverage) {
         const c = data.coverage;
         const ownedBtn = `<button class="coverage-num" data-list="owned">${c.total_owned}</button>`;
@@ -1090,17 +1093,20 @@
           ? `<button class="coverage-num" data-list="unmatched">${c.unmatched}</button>`
           : `<span class="coverage-num" style="color:var(--text-muted);text-decoration:none;cursor:default;">0</span>`;
 
-        libraryCoverage.innerHTML = `Se usaron ${matchedBtn} de ${ownedBtn} juegos para el cálculo` +
+        libraryCoverage.innerHTML = resolvedNote + `Se usaron ${matchedBtn} de ${ownedBtn} juegos para el cálculo` +
           (c.unmatched > 0 ? ` (${unmatchedBtn} no estaban indexados en el modelo entrenado).` : ".");
         libraryCoverage.classList.add("show");
 
         libraryCoverage.querySelectorAll(".coverage-num[data-list]").forEach(btn => {
           btn.addEventListener("click", () => openGamesListModal(btn.dataset.list, c));
         });
+      } else if (resolvedNote) {
+        libraryCoverage.innerHTML = resolvedNote;
+        libraryCoverage.classList.add("show");
       }
       renderResults(libraryResults, null, null, data.recommendations);
     } catch (err) {
-      setStatus(libraryStatus, "error", "Error de conexión con el servicio. Vuelve a intentarlo..");
+      setStatus(libraryStatus, "error", "Error de conexión con el servicio. Vuelve a intentarlo.");
     } finally {
       librarySubmit.disabled = false;
     }
